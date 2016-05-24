@@ -22,3 +22,7 @@ import com.typesafe.sbt.packager.archetypes.ServerLoader
 
 serverLoading in Debian:= ServerLoader.Systemd
 
+javaOptions in Universal ++= Seq(
+  // -J params will be added as jvm parameters
+  "-J-Xmx256m"
+)
