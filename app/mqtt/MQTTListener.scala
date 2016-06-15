@@ -1,22 +1,26 @@
 package mqtt
 
+import javax.inject.Inject
+
 import akka.actor.{Actor, ActorRef, Props}
+import com.google.inject.Singleton
 import com.sandinh.paho.akka.MqttPubSub
 import com.sandinh.paho.akka.MqttPubSub._
 import play.api.Play.current
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WS
 import play.api.mvc.Results
-import play.api.{Logger, Play}
+import play.api.{Configuration, Logger}
 import play.libs.Akka
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object MQTTListener {
+@Singleton
+class MQTTListener @Inject() (configuration: Configuration) {
 
-  val mqttUrl = Play.configuration.getString("mqtt.host").get + ":" + Play.configuration.getString("mqtt.port").get
-  val topic = Play.configuration.getString("mqtt.topic").get
-  val jenkinsUrl = Play.configuration.getString("jenkins.url").get
+  val mqttUrl =  configuration.getString("mqtt.host").get + ":" +  configuration.getString("mqtt.port").get
+  val topic =  configuration.getString("mqtt.topic").get
+  val jenkinsUrl =   configuration.getString("jenkins.url").get
 
   {
     Logger.info("Connecting websocket to channel: " + topic)
