@@ -6,9 +6,8 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.google.inject.Singleton
 import com.sandinh.paho.akka.MqttPubSub
 import com.sandinh.paho.akka.MqttPubSub._
-import play.api.Play.current
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.ws.WS
+import play.api.libs.ws.WSClient
 import play.api.mvc.Results
 import play.api.{Configuration, Logger}
 import play.libs.Akka
@@ -16,7 +15,7 @@ import play.libs.Akka
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class MQTTListener @Inject() (configuration: Configuration) {
+class MQTTListener @Inject() (configuration: Configuration, ws: WSClient) {
 
   val mqttUrl =  configuration.getString("mqtt.host").get + ":" +  configuration.getString("mqtt.port").get
   val topic =  configuration.getString("mqtt.topic").get
@@ -25,12 +24,12 @@ class MQTTListener @Inject() (configuration: Configuration) {
   {
     Logger.info("Connecting websocket to channel: " + topic)
     val pubsub: ActorRef = Akka.system.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
-    val mqttListener = Akka.system.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl)))
+    val mqttListener = Akka.system.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
   }
 
 }
 
-class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String) extends Actor {
+class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient) extends Actor {
 
   pubsub ! Subscribe(topic, self)
 
@@ -53,7 +52,7 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String) ex
 
           val triggerUrl = jenkinsUrl + "/job/" + rn.as[String] + "/build"
           Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
-          WS.url(triggerUrl).post(Results.EmptyContent()).map { r =>
+          ws.url(triggerUrl).post(Results.EmptyContent()).map { r =>
             Logger.info("Trigger response: " + r.status)
           }
         }
