@@ -2,29 +2,25 @@ package mqtt
 
 import javax.inject.Inject
 
-import akka.actor.{Actor, ActorRef, Props}
-import com.google.inject.Singleton
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import com.sandinh.paho.akka.MqttPubSub
 import com.sandinh.paho.akka.MqttPubSub._
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results
 import play.api.{Configuration, Logger}
-import play.libs.Akka
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-@Singleton
-class MQTTListener @Inject() (configuration: Configuration, ws: WSClient) {
+class MQTTListener @Inject() (configuration: Configuration, ws: WSClient, actorSystem: ActorSystem) {
 
-  val mqttUrl =  configuration.getString("mqtt.host").get + ":" +  configuration.getString("mqtt.port").get
-  val topic =  configuration.getString("mqtt.topic").get
-  val jenkinsUrl =   configuration.getString("jenkins.url").get
+  val mqttUrl = configuration.getString("mqtt.host").get + ":" + configuration.getString("mqtt.port").get
+  val topic = configuration.getString("mqtt.topic").get
+  val jenkinsUrl = configuration.getString("jenkins.url").get
 
   {
-    Logger.info("Connecting websocket to channel: " + topic)
-    val pubsub: ActorRef = Akka.system.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
-    val mqttListener = Akka.system.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
+    val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
+    val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
   }
 
 }
