@@ -6,8 +6,6 @@ lazy val `jenkins-mqtt` = (project in file(".")).enablePlugins(PlayScala)
 
 scalaVersion := "2.11.7"
 
-routesGenerator := StaticRoutesGenerator
-
 libraryDependencies ++= Seq(ws)
 
 libraryDependencies ++= Seq("com.sandinh" %% "paho-akka" % "1.2.0")
