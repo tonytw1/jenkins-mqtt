@@ -5,24 +5,22 @@ import javax.inject.Inject
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import com.sandinh.paho.akka.MqttPubSub
 import com.sandinh.paho.akka.MqttPubSub._
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class MQTTListener @Inject() (configuration: Configuration, ws: WSClient, actorSystem: ActorSystem) {
+class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSystem: ActorSystem) {
 
   val mqttUrl = configuration.getString("mqtt.host").get + ":" + configuration.getString("mqtt.port").get
   val topic = configuration.getString("mqtt.topic").get
   val jenkinsUrl = configuration.getString("jenkins.url").get
 
-  {
-    val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
-    val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
-  }
-
+  val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
+  val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
 }
 
 class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient) extends Actor {
@@ -30,29 +28,33 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
   pubsub ! Subscribe(topic, self)
 
   def receive: Receive = {
-    case SubscribeAck(Subscribe(topic, _, _)) => {
+    case SubscribeAck(Subscribe(topic, _, _)) =>
       Logger.info("Subscribed successfully to: " + topic)
-    }
-    case msg: Message => {
-      val message: String = new String(msg.payload)
+    case msg: Message =>
+      val message = new String(msg.payload)
       Logger.info("MQTT message received: " + message)
 
       val json = Json.parse(message)
-      val pusher: Option[JsValue] = (json \ "pusher").toOption
+      val pusher = (json \ "pusher").toOption
       pusher.map { p =>
         Logger.info("Pusher element seen; likely to be a push event")
-        val repoName: Option[JsValue] = (json \ "repository" \ "name").toOption
+        val repoName = (json \ "repository" \ "name").toOption
         Logger.info("Repo name: " + repoName)
         repoName.map { rn =>
-          Logger.info("Triggering build git repo name: " + rn)
-
-          val triggerUrl = jenkinsUrl + "/job/" + rn.as[String] + "/build"
-          Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
-          ws.url(triggerUrl).post(Results.EmptyContent()).map { r =>
-            Logger.info("Trigger response: " + r.status)
-          }
+          triggerBuild(rn.as[String])
         }
+      }.getOrElse {
+        Logger.info("Not a push event; ignoring")
       }
+  }
+
+  def triggerBuild(repoName: String): Future[Int] = {
+    Logger.info("Triggering build git repo name: " + repoName)
+    val triggerUrl = jenkinsUrl + "/job/" + repoName + "/build"
+    Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
+    ws.url(triggerUrl).post(Results.EmptyContent()).map { r =>
+      Logger.info("Trigger response: " + r.status)
+      r.status
     }
   }
 
