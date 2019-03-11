@@ -31,4 +31,4 @@ enablePlugins(DockerPlugin)
 
 import com.typesafe.sbt.packager.docker._
 
-dockerBaseImage := "openjdk:8-jre"
+dockerBaseImage := "openjdk:11-jre"
