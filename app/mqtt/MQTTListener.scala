@@ -51,25 +51,11 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
       }
 
     case currentState: CurrentState[PSState] =>
-      currentState.state match {
-        case DisconnectedState =>
-          Logger.info("DISCONNECTED")
-          connectionState.connected = false
-        case ConnectedState =>
-          Logger.info("CONNECTED")
-          connectionState.connected = true
-      }
+      updateConnectionState(currentState.state)
 
     case transition: Transition[PSState] =>
       Logger.info("State transition detected: "  + transition)
-      transition.to match {
-        case DisconnectedState =>
-          Logger.info("DISCONNECTED")
-          connectionState.connected = false
-        case ConnectedState =>
-          Logger.info("CONNECTED")
-          connectionState.connected = true
-      }
+      updateConnectionState(transition.to)
   }
 
   def triggerBuild(repoName: String): Future[Int] = {
@@ -80,6 +66,15 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
       Logger.info("Trigger response: " + r.status)
       r.status
     }
+  }
+
+  private def updateConnectionState(state: PSState) = {
+    case DisconnectedState =>
+      Logger.info("DISCONNECTED")
+      connectionState.connected = false
+    case ConnectedState =>
+      Logger.info("CONNECTED")
+      connectionState.connected = true
   }
 
 }
