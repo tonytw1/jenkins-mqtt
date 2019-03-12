@@ -1,10 +1,9 @@
 package mqtt
 
-import javax.inject.Inject
-
+import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack, Transition}
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import com.sandinh.paho.akka.MqttPubSub
-import com.sandinh.paho.akka.MqttPubSub._
+import com.sandinh.paho.akka._
+import javax.inject.Inject
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.mvc.Results

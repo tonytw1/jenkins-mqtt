@@ -8,7 +8,7 @@ scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(ws)
 
-libraryDependencies ++= Seq("com.sandinh" %% "paho-akka" % "1.2.0")
+libraryDependencies ++= Seq("com.sandinh" %% "paho-akka" % "1.4.0")
 
 libraryDependencies += specs2 % Test
 
