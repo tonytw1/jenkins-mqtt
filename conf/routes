@@ -1,1 +1,2 @@
-GET     /   controllers.Application.ping
+GET     /           controllers.Application.ping
+GET     /healthz    controllers.Application.health

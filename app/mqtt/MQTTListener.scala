@@ -3,6 +3,7 @@ package mqtt
 import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack, Transition}
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import com.sandinh.paho.akka._
+import health.ConnectionState
 import javax.inject.Inject
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
@@ -12,17 +13,17 @@ import play.api.{Configuration, Logger}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSystem: ActorSystem) {
+class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSystem: ActorSystem, connectionState: ConnectionState) {
 
   val mqttUrl = configuration.getString("mqtt.host").get + ":" + configuration.getString("mqtt.port").get
   val topic = configuration.getString("mqtt.topic").get
   val jenkinsUrl = configuration.getString("jenkins.url").get
 
   val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
-  val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws)))
+  val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws, connectionState)))
 }
 
-class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient) extends Actor {
+class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient, connectionState: ConnectionState) extends Actor {
 
   pubsub ! SubscribeTransitionCallBack(self)
 
@@ -53,8 +54,10 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
       currentState.state match {
         case DisconnectedState =>
           Logger.info("DISCONNECTED")
+          connectionState.connected = false
         case ConnectedState =>
           Logger.info("CONNECTED")
+          connectionState.connected = true
       }
 
     case transition: Transition[PSState] =>
@@ -62,8 +65,10 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
       transition.to match {
         case DisconnectedState =>
           Logger.info("DISCONNECTED")
+          connectionState.connected = false
         case ConnectedState =>
           Logger.info("CONNECTED")
+          connectionState.connected = true
       }
   }
 
