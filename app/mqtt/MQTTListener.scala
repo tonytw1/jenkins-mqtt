@@ -24,11 +24,14 @@ class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSy
 
 class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient) extends Actor {
 
+  pubsub ! SubscribeTransitionCallBack(self)
+
   pubsub ! Subscribe(topic, self)
 
   def receive: Receive = {
-    case SubscribeAck(Subscribe(topic, _, _)) =>
+    case SubscribeAck(Subscribe(topic, _, _), None) =>
       Logger.info("Subscribed successfully to: " + topic)
+
     case msg: Message =>
       val message = new String(msg.payload)
       Logger.info("MQTT message received: " + message)
@@ -44,6 +47,23 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
         }
       }.getOrElse {
         Logger.info("Not a push event; ignoring")
+      }
+
+    case currentState: CurrentState[PSState] =>
+      currentState.state match {
+        case DisconnectedState =>
+          Logger.info("DISCONNECTED")
+        case ConnectedState =>
+          Logger.info("CONNECTED")
+      }
+
+    case transition: Transition[PSState] =>
+      Logger.info("State transition detected: "  + transition)
+      transition.to match {
+        case DisconnectedState =>
+          Logger.info("DISCONNECTED")
+        case ConnectedState =>
+          Logger.info("CONNECTED")
       }
   }
 
