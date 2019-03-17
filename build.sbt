@@ -4,10 +4,12 @@ version := "1.0"
 
 lazy val `jenkins-mqtt` = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.8"
 
-libraryDependencies ++= Seq(ws)
+libraryDependencies += guice
+libraryDependencies += ws
 libraryDependencies ++= Seq("com.sandinh" %% "paho-akka" % "1.4.0")
+
 libraryDependencies += specs2 % Test
 
 enablePlugins(DockerPlugin)

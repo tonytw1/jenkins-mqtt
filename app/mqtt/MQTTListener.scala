@@ -76,7 +76,7 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
     Logger.info("Triggering build git repo name: " + repoName)
     val triggerUrl = jenkinsUrl + "/job/" + repoName + "/build"
     Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
-    ws.url(triggerUrl).post(Results.EmptyContent()).map { r =>
+    ws.url(triggerUrl).post("").map { r =>
       Logger.info("Trigger response: " + r.status)
       r.status
     }
