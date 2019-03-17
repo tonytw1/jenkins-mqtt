@@ -4,7 +4,7 @@ version := "1.0"
 
 lazy val `jenkins-mqtt` = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(ws)
 libraryDependencies ++= Seq("com.sandinh" %% "paho-akka" % "1.4.0")
