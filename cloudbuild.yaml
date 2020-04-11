@@ -1,6 +1,6 @@
 steps:
 - name: 'gcr.io/$PROJECT_ID/scala-sbt'
-  timeout: 800s
+  timeout: 300s
   args: ['clean', 'docker:publishLocal']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['tag', 'jenkins-mqtt:1.0', 'eu.gcr.io/$PROJECT_ID/jenkins-mqtt:$COMMIT_SHA']
