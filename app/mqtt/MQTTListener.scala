@@ -18,7 +18,7 @@ class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSy
   val topic = configuration.getString("mqtt.topic").get
 
   val jenkinsUrl = configuration.getString("jenkins.url").get
-  val jenkinsUsername= configuration.getString("jenkins.usernmae").get
+  val jenkinsUsername= configuration.getString("jenkins.username").get
   val jenkinsToken = configuration.getString("jenkins.token").get
 
   val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
