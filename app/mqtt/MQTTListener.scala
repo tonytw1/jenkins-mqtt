@@ -18,7 +18,7 @@ class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSy
   val topic = configuration.getString("mqtt.topic").get
 
   val jenkinsUrl = configuration.getString("jenkins.url").get
-  val jenkinsUsername= configuration.getString("jenkins.username").get
+  val jenkinsUsername = configuration.getString("jenkins.username").get
   val jenkinsToken = configuration.getString("jenkins.token").get
 
   val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
@@ -69,7 +69,7 @@ class MQTTListeningActor(pubsub: ActorRef,
       }
 
     case transition: Transition[PSState] =>
-      Logger.info("State transition detected: "  + transition)
+      Logger.info("State transition detected: " + transition)
       transition.to match {
         case DisconnectedState =>
           Logger.info("DISCONNECTED")
@@ -83,7 +83,7 @@ class MQTTListeningActor(pubsub: ActorRef,
   def triggerBuild(repoName: String): Future[Int] = {
     Logger.info("Triggering build git repo name: " + repoName)
     val triggerUrl = jenkinsUrl + "/job/" + repoName + "/build"
-    Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
+    Logger.info("POSTing to Jenkins trigger url: " + triggerUrl + " as " + jenkinsUsername + " with " + jenkinsToken)
     ws.url(triggerUrl).
       withAuth(jenkinsUsername, jenkinsToken, WSAuthScheme.BASIC).
       post("").map { r =>
