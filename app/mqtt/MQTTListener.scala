@@ -6,8 +6,7 @@ import com.sandinh.paho.akka._
 import health.ConnectionState
 import javax.inject.Inject
 import play.api.libs.json.Json
-import play.api.libs.ws.WSClient
-import play.api.mvc.Results
+import play.api.libs.ws.{WSAuthScheme, WSClient}
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,13 +16,22 @@ class MQTTListener @Inject()(configuration: Configuration, ws: WSClient, actorSy
 
   val mqttUrl = configuration.getString("mqtt.host").get + ":" + configuration.getString("mqtt.port").get
   val topic = configuration.getString("mqtt.topic").get
+
   val jenkinsUrl = configuration.getString("jenkins.url").get
+  val jenkinsUsername= configuration.getString("jenkins.usernmae").get
+  val jenkinsToken = configuration.getString("jenkins.token").get
 
   val pubsub: ActorRef = actorSystem.actorOf(Props(classOf[MqttPubSub], PSConfig(brokerUrl = "tcp://" + mqttUrl)))
-  val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, ws, connectionState)))
+  val mqttListener = actorSystem.actorOf(Props(new MQTTListeningActor(pubsub, topic, jenkinsUrl, jenkinsUsername, jenkinsToken, ws, connectionState)))
 }
 
-class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws: WSClient, connectionState: ConnectionState) extends Actor {
+class MQTTListeningActor(pubsub: ActorRef,
+                         topic: String,
+                         jenkinsUrl: String,
+                         jenkinsUsername: String,
+                         jenkinsToken: String,
+                         ws: WSClient,
+                         connectionState: ConnectionState) extends Actor {
 
   pubsub ! SubscribeTransitionCallBack(self)
 
@@ -76,7 +84,9 @@ class MQTTListeningActor(pubsub: ActorRef, topic: String, jenkinsUrl: String, ws
     Logger.info("Triggering build git repo name: " + repoName)
     val triggerUrl = jenkinsUrl + "/job/" + repoName + "/build"
     Logger.info("POSTing to Jenkins trigger url: " + triggerUrl)
-    ws.url(triggerUrl).post("").map { r =>
+    ws.url(triggerUrl).
+      withAuth(jenkinsUsername, jenkinsToken, WSAuthScheme.BASIC).
+      post("").map { r =>
       Logger.info("Trigger response: " + r.status)
       r.status
     }
