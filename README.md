@@ -12,3 +12,12 @@ There are probably better ways todo this but this works for us as we are already
 ### Configuration
 
 In `conf/application.conf` set your MQTT connection and Jenkins API settings.
+
+
+### Build
+
+To package as a container image:
+
+```
+sbt docker:publishLocal
+```
